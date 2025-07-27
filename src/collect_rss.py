@@ -156,9 +156,11 @@ async def process_rss_source(source, health_check_enabled, health_config, health
             published_date = None
             if 'published_parsed' in entry:
                 try:
-                    # 将entry.published_parsed转换为日期对象
-                    published_date = datetime.fromtimestamp(time.mktime(entry.published_parsed)).date()
-                    current_date = datetime.now().date()
+                    # 将published_parsed（UTC时间）转换为UTC日期
+                    published_utc = datetime.utcfromtimestamp(time.mktime(entry.published_parsed))
+                    published_date = published_utc.date()
+                    # 获取当前UTC日期
+                    current_date = datetime.utcnow().date()
                     
                     # 只保留今天的新闻
                     if published_date != current_date:
