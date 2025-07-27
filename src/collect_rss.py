@@ -79,6 +79,8 @@ async def process_rss_source(source, health_check_enabled, health_config, health
         if source_status['disabled']:
             if source_status['last_disabled_time']:
                 last_disabled = datetime.fromisoformat(source_status['last_disabled_time'])
+                if last_disabled.tzinfo is None:
+                    last_disabled = last_disabled.replace(tzinfo=timezone.utc)
                 if current_time - last_disabled < check_interval:
                     logging.info(f"源 {name} 因多次失败已被自动禁用，跳过处理")
                     return news_list, invalid_source, source_status
@@ -255,7 +257,7 @@ async def collect_rss_feeds():
     auto_disable = health_config.get('auto_disable', True)
     
     all_news = []
-    current_time = datetime.now(timezone.utc)  # 使用UTC时间进行统一处理
+    current_time = datetime.now(timezone.utc)
     
     # 创建任务列表
     tasks = []
@@ -281,10 +283,8 @@ async def collect_rss_feeds():
             invalid_sources.append(invalid_source)
         if source_status and health_check_enabled:
             # 注意：这里不需要再次更新health_status[url]，因为已经在process_rss_source中处理了
+            save_json_data(health_status, 'config/rss-health-status.json')
     
-    # 保存健康状态
-    if health_check_enabled:
-        save_json_data(health_status, 'config/rss-health-status.json')
     
     # 保存无效RSS源信息
     if invalid_sources:
@@ -299,8 +299,10 @@ def main():
     # 收集RSS内容
     try:
         news_data = asyncio.run(collect_rss_feeds())
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        logging.error(f"网络相关错误: {str(e)}")
     except Exception as e:
-        print(f"收集RSS时发生异常: {str(e)}")
+        logging.error(f"收集RSS时发生异常: {str(e)}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

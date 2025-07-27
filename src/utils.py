@@ -75,12 +75,19 @@ def load_json_config(file_path):
     return load_config(file_path)
 
 
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+
 def save_json_data(data, file_path):
     """保存数据到JSON文件"""
     try:
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump(data, f, ensure_ascii=False, indent=2, cls=DateTimeEncoder)
         return True
     except Exception as e:
         logging.error(f"保存JSON文件失败: {e}")
