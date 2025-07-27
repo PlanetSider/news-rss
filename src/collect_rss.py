@@ -83,15 +83,16 @@ async def process_rss_source(source, health_check_enabled, health_config, health
         try:
             # 发送HEAD请求检查URL是否可达
             async with aiohttp.ClientSession() as session:
-                async with session.head(url, timeout=timeout, allow_redirects=True) as response:
-                    if response.status < 400:
-                        # URL可达，重置失败计数
-                        source_status['failures'] = 0
-                        source_status['last_check'] = current_time.isoformat()
-                        logging.debug(f"源 {name} 健康检查通过")
-                    else:
-                        # HTTP状态码错误
-                        raise Exception(f"HTTP状态码错误: {response.status}")
+                  async with session.get(url, timeout=timeout, allow_redirects=True) as response:
+                      await response.text()  # 确保响应被完全读取
+                      if response.status < 400:
+                          # URL可达，重置失败计数
+                          source_status['failures'] = 0
+                          source_status['last_check'] = current_time.isoformat()
+                          logging.debug(f"源 {name} 健康检查通过")
+                      else:
+                          # HTTP状态码错误
+                          raise Exception(f"HTTP状态码错误: {response.status}")
         except Exception as e:
             # 健康检查失败
             source_status['failures'] += 1
