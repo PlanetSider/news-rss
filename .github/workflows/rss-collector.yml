@@ -55,7 +55,7 @@ jobs:
         python src/generate_markdown.py
     - name: 生成GitHub Pages
       run: |
-        python src/generate_github_pages.py
+        python src/generate_github_pages.py || exit 1
         
     - name: 提交结果
       run: |
