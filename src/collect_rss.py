@@ -168,25 +168,20 @@ async def process_rss_source(source, health_check_enabled, health_config, health
                 return news_list, invalid_source, source_status
 
         for entry in feed.entries:
-            # 解析发布日期并过滤非今日新闻
+            # 解析发布日期，不再过滤时间
             published_date = None
             if 'published_parsed' in entry:
                 try:
                     # 将published_parsed（UTC时间）转换为UTC日期
                     published_utc = datetime.fromtimestamp(calendar.timegm(entry.published_parsed), timezone.utc)
                     published_date = published_utc.date()
-                    # 获取当前UTC日期
-                    current_date = datetime.now(timezone.utc).date()
-                    
-                    # 只保留今天的新闻
-                    if published_date != current_date:
-                        continue
                 except Exception as e:
                     logging.warning(f"解析日期失败: {str(e)}, 条目: {entry.get('title', '未知标题')}")
-                    continue
+                    # 即使日期解析失败也保留新闻，使用当前时间
+                    published_date = datetime.now(timezone.utc).date()
             else:
-                # 没有发布日期的条目跳过
-                continue
+                # 没有发布日期的条目也保留，使用当前时间
+                published_date = datetime.now(timezone.utc).date()
 
             news_item = {
                 'title': entry.get('title', ''),
